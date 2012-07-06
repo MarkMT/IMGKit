@@ -53,8 +53,7 @@ class IMGKit
     else
       args << @source.to_s
     end
-    
-    args << '-' # Read IMG from stdout
+
     args
   end
 
@@ -99,13 +98,13 @@ class IMGKit
       }
     end
   end
-  
+
   def to_img(format = nil)
     append_stylesheets
     set_format(format)
 
     opts = @source.html? ? {:stdin_data => @source.to_s} : {}
-    result, stderr = capture3(*(command + [opts]))
+    result, stderr = capture3(*(command + ['-'] + [opts]))
     result.force_encoding("ASCII-8BIT") if result.respond_to? :force_encoding
     
     raise CommandFailedError.new(command.join(' '), stderr) if result.size == 0
@@ -115,7 +114,9 @@ class IMGKit
   def to_file(path)
     format = File.extname(path).gsub(/^\./,'').to_sym
     set_format(format)
-    File.open(path,'w:ASCII-8BIT') {|file| file << self.to_img}
+    append_stylesheets
+    opts = @source.html? ? {:stdin_data => @source.to_s} : {}
+    stdout, stderr = capture3(*(command + [path] + [opts]))
   end
 
   def method_missing(name, *args, &block)
